@@ -8,8 +8,6 @@
 
 This server acts as a bridge between AI models and Slack, enabling seamless creation, retrieval, filtering, and management of Slack List items through a standardized protocol. It empowers AI assistants like Claude Desktop to become powerful productivity tools for managing tasks, projects, and data within Slack.
 
-![Server Demo](https://i.imgur.com/example.gif)  <!-- Replace with actual demo GIF -->
-
 This project provides a complete, production-ready package with:
 - **Comprehensive Toolset**: Create, update, query, filter, and export list items.
 - **Robust Implementation**: Built with Python, FastMCP, and best practices.
