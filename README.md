@@ -11,7 +11,7 @@ This server acts as a bridge between AI models and Slack, enabling seamless crea
 ![Server Demo](https://i.imgur.com/example.gif)  <!-- Replace with actual demo GIF -->
 
 This project provides a complete, production-ready package with:
-- **Comprehensive Toolset**: Create, query, filter, and export list items.
+- **Comprehensive Toolset**: Create, update, query, filter, and export list items.
 - **Robust Implementation**: Built with Python, FastMCP, and best practices.
 - **Easy Deployment**: Simple setup with environment variables.
 - **Detailed Documentation**: Full README, tool reference, and examples.
@@ -28,11 +28,13 @@ This MCP server provides a rich set of tools for interacting with Slack Lists:
 
 - **Create Single Item**: Add one item to a list with detailed fields.
 - **Bulk Create Items**: Add multiple items at once with built-in rate limiting to respect Slack's API.
+- **Update Single Item**: Modify fields on an existing item with partial updates.
+- **Bulk Update Items**: Update multiple items at once with rate limiting and detailed progress tracking.
 - **Retrieve Items**: Fetch a list of items with optional metadata.
 - **Filter Items**: Powerful server-side filtering based on any field value (status, assignee, priority, etc.).
 - **Export Data**: Export list items to JSON or CSV format for analysis or backup.
 - **Subtask Creation**: Create sub-items under a parent item.
-- **Full Field Support**: Works with all Slack List field types (text, date, user, select, checkbox, etc.).
+- **Full Field Support**: Works with all Slack List field types (text, date, user, select, checkbox, number, email, phone).
 - **Error Handling**: Robust error handling and clear feedback for failed operations.
 - **Production Ready**: Includes logging, environment-based configuration, and a clean project structure.
 
@@ -174,6 +176,40 @@ This tool allows bulk creation of list items. Each item is created individually 
 
 --- 
 
+### `update_list_item`
+
+Updates an existing item in a Slack List.
+
+**Description:**
+This tool updates fields on a single existing item in the specified Slack List. Only the specified fields will be updated; other fields remain unchanged (partial update). This is ideal for status updates, field corrections, or incremental modifications.
+
+**Parameters:**
+- `list_id` (string, required): The ID of the Slack List (e.g., `F1234ABCD`).
+- `item_id` (string, required): The ID of the item to update.
+- `fields` (string, required): JSON string of fields to update. See [Field Formats](#field-formats) for details.
+
+**Example Prompt:**
+> "Update task item `ITEM123` in list `F1234ABCD` to mark it as complete and set the completion date to today."
+
+--- 
+
+### `update_multiple_list_items`
+
+Updates multiple items in a Slack List with rate limiting.
+
+**Description:**
+This tool allows bulk updating of list items. Each item is updated individually with proper rate limiting to respect Slack's API limits (~50 requests per minute). Only specified fields are updated per item; other fields remain unchanged.
+
+**Parameters:**
+- `list_id` (string, required): The ID of the Slack List.
+- `items_data` (string, required): JSON array of items to update. See [Bulk Update Format](#bulk-update-format) for details.
+- `rate_limit_delay` (float, optional): Delay between requests in seconds (default: 1.2s).
+
+**Example Prompt:**
+> "Update all items assigned to me in list `F1234ABCD` to mark them as 'In Progress'."
+
+--- 
+
 ### `get_list_items`
 
 Retrieves items from a Slack List.
@@ -295,6 +331,30 @@ The `items_data` parameter for `create_multiple_list_items` expects a JSON array
 ]
 ```
 
+### Bulk Update Format
+
+The `items_data` parameter for `update_multiple_list_items` expects a JSON array where each object represents an item to be updated.
+
+```json
+[
+  {
+    "item_id": "ITEM123",
+    "fields": [
+      {"column_id": "Col10000001", "type": "text", "value": "Updated status"}
+    ]
+  },
+  {
+    "item_id": "ITEM456",
+    "fields": [
+      {"column_id": "Col10000002", "type": "checkbox", "value": true},
+      {"column_id": "Col10000003", "type": "date", "value": "2024-12-31"}
+    ]
+  }
+]
+```
+
+**Note:** Update operations only modify the specified fields. Other fields on the item remain unchanged.
+
 ### Filter Operators
 
 The `filter_list_items` tool supports the following operators:
@@ -321,6 +381,25 @@ The `filter_list_items` tool supports the following operators:
 
 1. **List ID**: Open the list in Slack. The ID is the last part of the URL (e.g., `https://app.slack.com/client/.../F1234ABCD`).
 2. **Column ID**: You can find column IDs by inspecting the network requests in your browser's developer tools when you interact with the list, or by using the `get_list_items` tool and examining the output.
+3. **Item ID**: Use the `get_list_items` tool to retrieve items and their IDs. Each item has a unique ID that can be used with the update tools.
+
+## Use Cases
+
+Here are some practical examples of what you can do with this MCP server:
+
+**Task Management:**
+- "Create a new project task with title 'Implement feature X', assign it to @john, and set the due date to next Friday."
+- "Update all tasks in my sprint to mark them as 'In Progress'."
+- "Show me all high-priority tasks that are overdue."
+
+**Status Tracking:**
+- "Update item ITEM123 to change status from 'In Progress' to 'Complete' and set the completion date to today."
+- "Find all items assigned to @sarah that have status 'Blocked'."
+
+**Bulk Operations:**
+- "Add these 5 items to my project list: [list of items with details]."
+- "Update all completed items in list F1234 to archive them."
+- "Export all items from my Q4 planning list to CSV."
 
 ## Contributing
 
