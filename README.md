@@ -69,12 +69,8 @@ Clone the repository and install the dependencies:
 git clone https://github.com/your-org/slack-lists-mcp-server.git
 cd slack-lists-mcp-server
 
-# Create and activate a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies with uv
+uv sync
 ```
 
 ### 3. Configuration
