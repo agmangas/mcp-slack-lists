@@ -45,10 +45,30 @@ Enable Claude, Cursor, and GitHub Copilot to create, update, filter, and export 
 
 ### 2. Install
 
+Choose one of the following installation methods:
+
+#### Option A: Install from Source
+
 ```bash
 git clone https://github.com/your-org/slack-lists-mcp-server.git
 cd slack-lists-mcp-server
 uv sync
+```
+
+#### Option B: Use Docker (Recommended for Production)
+
+Pull the pre-built image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/agmangas/mcp-slack-lists:latest
+```
+
+Or build locally:
+
+```bash
+git clone https://github.com/your-org/slack-lists-mcp-server.git
+cd slack-lists-mcp-server
+docker build -t slack-lists-mcp:local .
 ```
 
 ### 3. Configure
@@ -60,13 +80,25 @@ cp .env.example .env
 
 ### 4. Test Locally
 
+#### Using Python Directly
+
 ```bash
 python src/slack_lists_server.py
 ```
 
+#### Using Docker
+
+```bash
+# Run with environment variable
+docker run -e SLACK_BOT_TOKEN=xoxb-your-token-here ghcr.io/agmangas/mcp-slack-lists:latest
+
+# Or run with environment file
+docker run --env-file .env ghcr.io/agmangas/mcp-slack-lists:latest
+```
+
 ### 5. Connect to MCP Client
 
-Configure your AI assistant to use the server. Replace `/path/to/your/.venv/bin/python` with your actual Python path.
+Configure your AI assistant to use the server. You can use either Python directly or Docker.
 
 <details>
 <summary><b>Claude Desktop</b></summary>
@@ -76,7 +108,7 @@ Configure your AI assistant to use the server. Replace `/path/to/your/.venv/bin/
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
-**Configuration:**
+**Configuration (Python):**
 
 ```json
 {
@@ -85,6 +117,26 @@ Configure your AI assistant to use the server. Replace `/path/to/your/.venv/bin/
       "command": "/path/to/.venv/bin/python",
       "args": ["/path/to/src/slack_lists_server.py"],
       "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
+    }
+  }
+}
+```
+
+**Configuration (Docker):**
+
+```json
+{
+  "mcpServers": {
+    "slack-lists": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "SLACK_BOT_TOKEN=xoxb-...",
+        "ghcr.io/agmangas/mcp-slack-lists:latest"
+      ]
     }
   }
 }
@@ -127,7 +179,7 @@ claude mcp list  # Verify
 - Windows: `%APPDATA%\Cursor\mcp.json`
 - Linux: `~/.config/cursor/mcp.json`
 
-**Configuration:**
+**Configuration (Python):**
 
 ```json
 {
@@ -136,6 +188,23 @@ claude mcp list  # Verify
       "command": "/path/to/.venv/bin/python",
       "args": ["/path/to/src/slack_lists_server.py"],
       "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
+    }
+  }
+}
+```
+
+**Configuration (Docker):**
+
+```json
+{
+  "mcpServers": {
+    "slack-lists": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "SLACK_BOT_TOKEN=xoxb-...",
+        "ghcr.io/agmangas/mcp-slack-lists:latest"
+      ]
     }
   }
 }
@@ -184,6 +253,86 @@ copilot
 - Use absolute paths: find with `which python` (Unix) or `where python` (Windows)
 - Validate JSON syntax (no trailing commas!)
 - Fully restart your MCP client after changes
+
+---
+
+## Docker Usage
+
+### Pulling from GitHub Container Registry
+
+The server is automatically built and published to GHCR on every commit to main:
+
+```bash
+# Pull the latest version
+docker pull ghcr.io/agmangas/mcp-slack-lists:latest
+
+# Pull a specific version by SHA
+docker pull ghcr.io/agmangas/mcp-slack-lists:sha-abc1234
+```
+
+### Running the Container
+
+```bash
+# Basic usage with environment variable
+docker run -i --rm \
+  -e SLACK_BOT_TOKEN=xoxb-your-token-here \
+  ghcr.io/agmangas/mcp-slack-lists:latest
+
+# Using an environment file
+docker run -i --rm \
+  --env-file .env \
+  ghcr.io/agmangas/mcp-slack-lists:latest
+```
+
+**Important Flags:**
+- `-i` (interactive): **Required** for MCP stdio communication - keeps stdin open
+- `--rm`: Automatically remove container when it exits
+- `-e`: Pass environment variables
+- `--env-file`: Load environment variables from file
+
+**Note**: Do NOT use `-t` (TTY) flag as it interferes with MCP's JSON-RPC stdio protocol.
+
+### Building Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/agmangas/mcp-slack-lists.git
+cd mcp-slack-lists
+
+# Build the image
+docker build -t slack-lists-mcp:local .
+
+# Run your local build
+docker run -i --rm \
+  -e SLACK_BOT_TOKEN=xoxb-your-token-here \
+  slack-lists-mcp:local
+```
+
+### Docker Compose Example
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  slack-lists-mcp:
+    image: ghcr.io/agmangas/mcp-slack-lists:latest
+    stdin_open: true
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+    # Or use env_file:
+    # env_file: .env
+```
+
+Run with: `docker-compose run --rm slack-lists-mcp`
+
+### Security Notes
+
+- **Never commit your SLACK_BOT_TOKEN** to version control
+- Always use environment variables or Docker secrets for sensitive data
+- The container runs as a non-root user (UID 1000) for security
+- Image size: ~246MB (optimized multi-stage build)
 
 
 
@@ -346,13 +495,13 @@ Each field requires `column_id`, `type`, and `value`:
 
 ## Troubleshooting
 
-| Error | Solution |
-|-------|----------|
-| `invalid_auth` | Regenerate bot token and update `.env` |
-| `missing_scope` | Add `lists:read` and `lists:write` scopes to Slack app |
-| `list_not_found` | Verify list ID in Slack URL |
-| Server not responding | Check paths in config, validate JSON syntax |
-| JSON errors | Use online validator, ensure no trailing commas |
+| Error                 | Solution                                               |
+| --------------------- | ------------------------------------------------------ |
+| `invalid_auth`        | Regenerate bot token and update `.env`                 |
+| `missing_scope`       | Add `lists:read` and `lists:write` scopes to Slack app |
+| `list_not_found`      | Verify list ID in Slack URL                            |
+| Server not responding | Check paths in config, validate JSON syntax            |
+| JSON errors           | Use online validator, ensure no trailing commas        |
 
 ## Example Prompts
 
