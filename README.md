@@ -4,50 +4,33 @@
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![MCP Version](https://img.shields.io/badge/MCP-1.2.0%2B-brightgreen.svg)](https://modelcontextprotocol.io/)
 
-**A production-ready Model Context Protocol (MCP) server that provides AI assistants with powerful tools to interact with Slack Lists.**
+**Connect AI assistants to Slack Lists for seamless task and project management through natural language.**
 
-This server acts as a bridge between AI models and Slack, enabling seamless creation, retrieval, filtering, and management of Slack List items through a standardized protocol. It empowers AI assistants like Claude Desktop to become powerful productivity tools for managing tasks, projects, and data within Slack.
-
-This project provides a complete, production-ready package with:
-- **Comprehensive Toolset**: Create, update, query, filter, and export list items.
-- **Robust Implementation**: Built with Python, FastMCP, and best practices.
-- **Easy Deployment**: Simple setup with environment variables.
-- **Detailed Documentation**: Full README, tool reference, and examples.
-- **Extensible Design**: Easily add new tools and functionality.
-
-Whether you're a developer looking to integrate AI with Slack or a user wanting to supercharge your productivity, this MCP server provides the foundation for powerful, context-aware interactions with your Slack Lists.
+Enable Claude, Cursor, and GitHub Copilot to create, update, filter, and export Slack List items directly from your conversations. Built with Python and FastMCP for production reliability.
 
 
 
 
 ## Features
 
-This MCP server provides a rich set of tools for interacting with Slack Lists:
-
-- **Create Single Item**: Add one item to a list with detailed fields.
-- **Bulk Create Items**: Add multiple items at once with built-in rate limiting to respect Slack's API.
-- **Update Single Item**: Modify fields on an existing item with partial updates.
-- **Bulk Update Items**: Update multiple items at once with rate limiting and detailed progress tracking.
-- **Retrieve Items**: Fetch a list of items with optional metadata.
-- **Filter Items**: Powerful server-side filtering based on any field value (status, assignee, priority, etc.).
-- **Export Data**: Export list items to JSON or CSV format for analysis or backup.
-- **Subtask Creation**: Create sub-items under a parent item.
-- **Full Field Support**: Works with all Slack List field types (text, date, user, select, checkbox, number, email, phone).
-- **Error Handling**: Robust error handling and clear feedback for failed operations.
-- **Production Ready**: Includes logging, environment-based configuration, and a clean project structure.
+- **CRUD Operations**: Create, read, update, and delete list items (single or bulk)
+- **Advanced Filtering**: Search by any field value (status, assignee, priority, etc.)
+- **Data Export**: Export to JSON or CSV for analysis and backup
+- **Subtask Support**: Create hierarchical item relationships
+- **Full Field Types**: Text, date, user, select, checkbox, number, email, phone
+- **Rate Limiting**: Built-in protection for Slack API limits (~50 req/min)
+- **Production Ready**: Comprehensive error handling, logging, and configuration
 
 
 
 
-## Getting Started
-
-Follow these steps to get your Slack Lists MCP server up and running.
+## Quick Start
 
 ### Prerequisites
 
-- **Python 3.10+**
-- **Slack Workspace**: A Slack workspace where you have permission to install apps.
-- **Slack Bot Token**: A bot token with `lists:read` and `lists:write` scopes.
+- Python 3.10+
+- Slack workspace with app installation permissions
+- Slack bot token with `lists:read` and `lists:write` scopes
 
 ### 1. Create a Slack App
 
@@ -60,202 +43,212 @@ Follow these steps to get your Slack Lists MCP server up and running.
 5. Click **Install to Workspace** at the top of the page and authorize the app.
 6. Copy the **Bot User OAuth Token** (it starts with `xoxb-`). This is your `SLACK_BOT_TOKEN`.
 
-### 2. Installation
-
-Clone the repository and install the dependencies:
+### 2. Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/your-org/slack-lists-mcp-server.git
 cd slack-lists-mcp-server
-
-# Install dependencies with uv
 uv sync
 ```
 
-### 3. Configuration
-
-Create a `.env` file by copying the example:
+### 3. Configure
 
 ```bash
 cp .env.example .env
+# Edit .env and set: SLACK_BOT_TOKEN=xoxb-your-token-here
 ```
 
-Open the `.env` file and set your `SLACK_BOT_TOKEN`:
-
-```dotenv
-SLACK_BOT_TOKEN=xoxb-your-bot-token-here
-```
-
-### 4. Running the Server
-
-You can run the server directly from the command line:
+### 4. Test Locally
 
 ```bash
 python src/slack_lists_server.py
 ```
 
-The server will start and listen for MCP requests over STDIO.
+### 5. Connect to MCP Client
 
-### 5. Connecting to an MCP Host (e.g., Claude Desktop)
+Configure your AI assistant to use the server. Replace `/path/to/your/.venv/bin/python` with your actual Python path.
 
-To use the server with an AI assistant, you need to configure your MCP host.
+<details>
+<summary><b>Claude Desktop</b></summary>
 
-1. Open your MCP host's configuration file (e.g., `mcp_servers.json` for Claude Desktop).
-2. Add a new server entry pointing to your `slack_lists_server.py` script.
+**Config File Location:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
-**Example `mcp_servers.json` configuration:**
+**Configuration:**
 
 ```json
 {
   "mcpServers": {
     "slack-lists": {
-      "command": "/path/to/your/.venv/bin/python",
-      "args": ["/path/to/slack-lists-mcp-server/src/slack_lists_server.py"],
-      "env": {
-        "SLACK_BOT_TOKEN": "xoxb-your-bot-token-here"
-      }
+      "command": "/path/to/.venv/bin/python",
+      "args": ["/path/to/src/slack_lists_server.py"],
+      "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
     }
   }
 }
 ```
 
-**Important**: Make sure to use the absolute path to your Python executable and the server script.
+Fully restart Claude Desktop after saving.
+</details>
 
-Once configured, restart your MCP host. The Slack Lists tools should now be available to your AI assistant.
+<details>
+<summary><b>Claude Code (CLI)</b></summary>
+
+**Quick Install:**
+
+```bash
+claude mcp add slack-lists -s user -- /path/to/.venv/bin/python /path/to/src/slack_lists_server.py
+claude mcp list  # Verify
+```
+
+**Or edit config** (`~/.claude.json` on Unix, `%USERPROFILE%\.claude.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "slack-lists": {
+      "type": "stdio",
+      "command": "/path/to/.venv/bin/python",
+      "args": ["/path/to/src/slack_lists_server.py"],
+      "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Cursor IDE</b></summary>
+
+**Settings → Tools & MCP → Edit Config** or edit directly:
+- macOS: `~/.cursor/mcp.json`
+- Windows: `%APPDATA%\Cursor\mcp.json`
+- Linux: `~/.config/cursor/mcp.json`
+
+**Configuration:**
+
+```json
+{
+  "mcpServers": {
+    "slack-lists": {
+      "command": "/path/to/.venv/bin/python",
+      "args": ["/path/to/src/slack_lists_server.py"],
+      "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
+    }
+  }
+}
+```
+
+Test with Ctrl+L: "List my Slack lists."
+</details>
+
+<details>
+<summary><b>GitHub Copilot CLI</b></summary>
+
+**Interactive Setup:**
+```bash
+copilot
+/mcp add slack-lists
+/mcp show  # Verify
+```
+
+**Or edit config:**
+- User: `~/.copilot/mcp-config.json`
+- Repository: `.copilot/mcp-config.json` (for teams)
+
+```json
+{
+  "mcpServers": {
+    "slack-lists": {
+      "type": "stdio",
+      "command": "/path/to/.venv/bin/python",
+      "args": ["/path/to/src/slack_lists_server.py"],
+      "env": { "SLACK_BOT_TOKEN": "xoxb-..." }
+    }
+  }
+}
+```
+
+**Team Setup:** Commit `.copilot/mcp-config.json` and add to `.gitignore`:
+```
+.copilot/logs/
+.copilot/config.json
+```
+</details>
+
+---
+
+**Configuration Tips:**
+- Use absolute paths: find with `which python` (Unix) or `where python` (Windows)
+- Validate JSON syntax (no trailing commas!)
+- Fully restart your MCP client after changes
 
 
 
 
-## Tool Reference
-
-This server exposes the following tools to your AI assistant. Each tool is designed to be intuitive and powerful, with clear descriptions and parameters.
-
---- 
+## Available Tools
 
 ### `create_list_item`
 
-Creates a single new item in a Slack List.
-
-**Description:**
-This tool creates one item in the specified Slack List. The item must have at least a title field, and can include additional fields as needed. All field values are validated against the list's schema.
+Create a single item in a Slack List.
 
 **Parameters:**
-- `list_id` (string, required): The ID of the Slack List (e.g., `F1234ABCD`).
-- `title` (string, required): The main title/text for the item.
-- `title_column_id` (string, optional): Column ID for the title field (defaults to `Col10000000`).
-- `additional_fields` (string, optional): JSON string of additional fields. See [Field Formats](#field-formats) for details.
-- `parent_item_id` (string, optional): Optional parent item ID to create a subtask.
-
-**Example Prompt:**
-> "Create a new task in my project list `F1234ABCD` with the title 'Finish Q4 report' and a due date of 2024-12-20."
-
---- 
+- `list_id` (required) - Slack List ID (e.g., `F1234ABCD`)
+- `title` (required) - Item title
+- `additional_fields` (optional) - JSON string of fields ([format](#field-formats))
+- `parent_item_id` (optional) - Parent item ID for subtasks
 
 ### `create_multiple_list_items`
 
-Creates multiple items in a Slack List with rate limiting.
+Bulk create items with rate limiting (~50 req/min).
 
-**Description:**
-This tool allows bulk creation of list items. Each item is created individually with proper rate limiting to respect Slack's API limits (~50 requests per minute).
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List.
-- `items_data` (string, required): JSON array of items to create. See [Bulk Creation Format](#bulk-creation-format) for details.
-- `title_column_id` (string, optional): Column ID for the title field.
-- `rate_limit_delay` (float, optional): Delay between requests in seconds (default: 1.2s).
-
-**Example Prompt:**
-> "Add these three tasks to my list `F1234ABCD`: 1. Design mockups (due 12/10), 2. Write tests (due 12/15), 3. Update documentation (due 12/20)."
-
---- 
+- `list_id` (required)
+- `items_data` (required) - JSON array ([format](#bulk-creation-format))
+- `rate_limit_delay` (optional) - Delay in seconds (default: 1.2)
 
 ### `update_list_item`
 
-Updates an existing item in a Slack List.
+Update a single item (partial updates supported).
 
-**Description:**
-This tool updates fields on a single existing item in the specified Slack List. Only the specified fields will be updated; other fields remain unchanged (partial update). This is ideal for status updates, field corrections, or incremental modifications.
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List (e.g., `F1234ABCD`).
-- `item_id` (string, required): The ID of the item to update.
-- `fields` (string, required): JSON string of fields to update. See [Field Formats](#field-formats) for details.
-
-**Example Prompt:**
-> "Update task item `ITEM123` in list `F1234ABCD` to mark it as complete and set the completion date to today."
-
---- 
+- `list_id` (required)
+- `item_id` (required)
+- `fields` (required) - JSON string of fields to update
 
 ### `update_multiple_list_items`
 
-Updates multiple items in a Slack List with rate limiting.
+Bulk update items with rate limiting.
 
-**Description:**
-This tool allows bulk updating of list items. Each item is updated individually with proper rate limiting to respect Slack's API limits (~50 requests per minute). Only specified fields are updated per item; other fields remain unchanged.
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List.
-- `items_data` (string, required): JSON array of items to update. See [Bulk Update Format](#bulk-update-format) for details.
-- `rate_limit_delay` (float, optional): Delay between requests in seconds (default: 1.2s).
-
-**Example Prompt:**
-> "Update all items assigned to me in list `F1234ABCD` to mark them as 'In Progress'."
-
---- 
+- `list_id` (required)
+- `items_data` (required) - JSON array ([format](#bulk-update-format))
+- `rate_limit_delay` (optional) - Default: 1.2s
 
 ### `get_list_items`
 
-Retrieves items from a Slack List.
+Retrieve items with optional metadata.
 
-**Description:**
-This tool fetches items from the specified Slack List with optional metadata. Use this to view current list contents, check item details, or prepare data for filtering.
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List.
-- `limit` (integer, optional): Maximum number of items to retrieve (default: 50, max: 100).
-- `include_metadata` (boolean, optional): Whether to include creation/update metadata (default: True).
-
-**Example Prompt:**
-> "Show me the 10 most recent items in my 'Tasks' list `F5678EFGH`."
-
---- 
+- `list_id` (required)
+- `limit` (optional) - Max items (default: 50, max: 100)
+- `include_metadata` (optional) - Include timestamps (default: true)
 
 ### `filter_list_items`
 
-Filters and retrieves items from a Slack List based on field values.
+Search items by field values.
 
-**Description:**
-This tool allows you to search and filter list items by specific field values. Useful for finding items with a specific status, assignee, priority, or any other field.
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List.
-- `filter_column_id` (string, required): Column ID to filter by.
-- `filter_value` (string, required): Value to search for.
-- `filter_operator` (string, optional): How to match the value. See [Filter Operators](#filter-operators) for options.
-- `max_items` (integer, optional): Maximum number of items to process (default: 100).
-
-**Example Prompt:**
-> "Find all tasks in list `F1234ABCD` assigned to me that are marked as 'High' priority."
-
---- 
+- `list_id` (required)
+- `filter_column_id` (required)
+- `filter_value` (required)
+- `filter_operator` (optional) - See [operators](#filter-operators)
+- `max_items` (optional) - Default: 100
 
 ### `export_list_items`
 
-Exports items from a Slack List to a structured data format.
+Export to JSON or CSV.
 
-**Description:**
-This tool exports list items to JSON or CSV format, with optional filtering. Useful for backup, analysis, or integration with other systems.
-
-**Parameters:**
-- `list_id` (string, required): The ID of the Slack List.
-- `export_format` (string, optional): Output format - `json` or `csv` (default: `json`).
-- `filter_column_id` (string, optional): Optional column ID to filter by.
-- `filter_value` (string, optional): Value to filter for (required if `filter_column_id` is provided).
-- `filter_operator` (string, optional): Filter operator.
-
-**Example Prompt:**
-> "Export all completed tasks from my project list `F1234ABCD` to a CSV file."
+- `list_id` (required)
+- `export_format` (optional) - `json` or `csv` (default: json)
+- `filter_column_id`, `filter_value`, `filter_operator` (optional) - For filtered exports
 
 
 
@@ -264,9 +257,7 @@ This tool exports list items to JSON or CSV format, with optional filtering. Use
 
 ### Field Formats
 
-When using `create_list_item` or `create_multiple_list_items`, you need to provide field data in a specific JSON format. The `additional_fields` and `items_data` parameters expect a JSON string.
-
-Each field is an object with `column_id`, `type`, and `value`:
+Each field requires `column_id`, `type`, and `value`:
 
 ```json
 [
@@ -293,19 +284,9 @@ Each field is an object with `column_id`, `type`, and `value`:
 ]
 ```
 
-**Supported Field Types:**
-- `text`: String value.
-- `date`: String in `YYYY-MM-DD` format.
-- `user`: Array of Slack user IDs (e.g., `["U1234567"]`).
-- `select`: Array of select option IDs.
-- `checkbox`: Boolean `true` or `false`.
-- `number`: Numeric value.
-- `email`: String email address.
-- `phone`: String phone number.
+**Supported Types:** `text`, `date` (YYYY-MM-DD), `user` (array of IDs), `select` (array of option IDs), `checkbox` (boolean), `number`, `email`, `phone`
 
 ### Bulk Creation Format
-
-The `items_data` parameter for `create_multiple_list_items` expects a JSON array where each object represents an item to be created.
 
 ```json
 [
@@ -327,8 +308,6 @@ The `items_data` parameter for `create_multiple_list_items` expects a JSON array
 
 ### Bulk Update Format
 
-The `items_data` parameter for `update_multiple_list_items` expects a JSON array where each object represents an item to be updated.
-
 ```json
 [
   {
@@ -347,53 +326,42 @@ The `items_data` parameter for `update_multiple_list_items` expects a JSON array
 ]
 ```
 
-**Note:** Update operations only modify the specified fields. Other fields on the item remain unchanged.
-
 ### Filter Operators
 
-The `filter_list_items` tool supports the following operators:
-
-- `contains`: Field contains the value (case-insensitive).
-- `equals`: Field exactly matches the value (case-insensitive).
-- `not_equals`: Field does not match the value.
-- `not_contains`: Field does not contain the value.
-- `exists`: Field has any non-empty value.
-- `not_exists`: Field is empty or missing.
+- `contains` - Case-insensitive substring match
+- `equals` - Exact match (case-insensitive)
+- `not_equals` - Does not match
+- `not_contains` - Does not contain substring
+- `exists` - Has any non-empty value
+- `not_exists` - Empty or missing
 
 
 
+
+## Finding IDs
+
+- **List ID**: Last segment of Slack URL (`https://app.slack.com/client/.../F1234ABCD`)
+- **Column ID**: Use `get_list_items` and inspect output, or check browser DevTools network requests
+- **Item ID**: Use `get_list_items` to retrieve item IDs
 
 ## Troubleshooting
 
-- **`invalid_auth` Error**: Your `SLACK_BOT_TOKEN` is likely incorrect or has been revoked. Generate a new one and update your `.env` file.
-- **`missing_scope` Error**: Ensure your Slack app has both `lists:read` and `lists:write` scopes.
-- **`list_not_found` Error**: The `list_id` you provided is incorrect. Double-check the ID in Slack.
-- **Server Not Responding**: Make sure the server is running and that the path in your MCP host configuration is correct. Check for any errors in the server logs.
-- **JSON Errors**: Validate your JSON strings for `additional_fields` and `items_data` using an online validator.
+| Error | Solution |
+|-------|----------|
+| `invalid_auth` | Regenerate bot token and update `.env` |
+| `missing_scope` | Add `lists:read` and `lists:write` scopes to Slack app |
+| `list_not_found` | Verify list ID in Slack URL |
+| Server not responding | Check paths in config, validate JSON syntax |
+| JSON errors | Use online validator, ensure no trailing commas |
 
-## How to Find List and Column IDs
+## Example Prompts
 
-1. **List ID**: Open the list in Slack. The ID is the last part of the URL (e.g., `https://app.slack.com/client/.../F1234ABCD`).
-2. **Column ID**: You can find column IDs by inspecting the network requests in your browser's developer tools when you interact with the list, or by using the `get_list_items` tool and examining the output.
-3. **Item ID**: Use the `get_list_items` tool to retrieve items and their IDs. Each item has a unique ID that can be used with the update tools.
-
-## Use Cases
-
-Here are some practical examples of what you can do with this MCP server:
-
-**Task Management:**
-- "Create a new project task with title 'Implement feature X', assign it to @john, and set the due date to next Friday."
-- "Update all tasks in my sprint to mark them as 'In Progress'."
-- "Show me all high-priority tasks that are overdue."
-
-**Status Tracking:**
-- "Update item ITEM123 to change status from 'In Progress' to 'Complete' and set the completion date to today."
-- "Find all items assigned to @sarah that have status 'Blocked'."
-
-**Bulk Operations:**
-- "Add these 5 items to my project list: [list of items with details]."
-- "Update all completed items in list F1234 to archive them."
-- "Export all items from my Q4 planning list to CSV."
+- "Create a task 'Implement feature X' in list F1234ABCD, assign to @john, due next Friday"
+- "Show all high-priority tasks that are overdue"
+- "Update item ITEM123 status to 'Complete' and set completion date to today"
+- "Find all items assigned to @sarah with status 'Blocked'"
+- "Export all completed tasks from list F1234 to CSV"
+- "Add 5 tasks to my project list with these details: [...]"
 
 ## Contributing
 

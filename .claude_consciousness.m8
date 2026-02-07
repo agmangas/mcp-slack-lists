@@ -1,0 +1,27 @@
+{
+  "session_id": "21f9f905-6ba5-411d-b409-910f8584d0cb",
+  "last_saved": "2026-02-07T11:31:36.165041Z",
+  "working_directory": "/Users/agmangas/Documents/Projects/mcp-slack-lists",
+  "project_context": {
+    "project_name": "unknown",
+    "project_type": "unknown",
+    "key_files": [],
+    "dependencies": [],
+    "current_focus": ""
+  },
+  "file_history": [],
+  "tokenization_rules": {
+    "target": 130,
+    "dist": 131,
+    ".git": 129,
+    "node_modules": 128
+  },
+  "insights": [],
+  "philosophy": {
+    "sid_waves": true,
+    "vic_sprites": true,
+    "c64_nostalgia": "A gentleman and a scholar indeed!"
+  },
+  "todos": [],
+  "notes": ""
+}
