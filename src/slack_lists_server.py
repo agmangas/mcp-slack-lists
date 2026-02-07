@@ -61,25 +61,33 @@ class SlackListsClient:
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make authenticated request to Slack API"""
         url = f"{SLACK_API_BASE}/{endpoint}"
-        
+
         async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
             try:
                 if method.upper() == "GET":
                     response = await client.get(url, headers=self.headers, params=kwargs.get('params'))
                 else:
                     response = await client.request(
-                        method, url, headers=self.headers, 
+                        method, url, headers=self.headers,
                         json=kwargs.get('json'), params=kwargs.get('params')
                     )
-                
+
                 response.raise_for_status()
                 data = response.json()
-                
+
                 if not data.get("ok"):
-                    raise SlackListsError(f"Slack API error: {data.get('error', 'Unknown error')}")
-                
+                    error_msg = f"Slack API error: {data.get('error', 'Unknown error')}"
+                    # Include response_metadata.messages for detailed error info
+                    metadata_messages = data.get('response_metadata', {}).get('messages', [])
+                    if metadata_messages:
+                        error_msg += f" - Details: {', '.join(metadata_messages)}"
+                    raise SlackListsError(error_msg)
+
                 return data
-                
+
+            except SlackListsError:
+                # Re-raise SlackListsError without wrapping
+                raise
             except httpx.HTTPError as e:
                 raise SlackListsError(f"HTTP error: {str(e)}")
             except Exception as e:
@@ -98,14 +106,14 @@ class SlackListsClient:
         
         return await self._make_request("POST", "slackLists.items.create", json=payload)
     
-    async def get_list_items(self, list_id: str, limit: int = 100, 
+    async def get_list_items(self, list_id: str, limit: int = 100,
                            cursor: Optional[str] = None) -> Dict[str, Any]:
         """Get items from a Slack List with pagination"""
-        params = {"list_id": list_id, "limit": limit}
+        payload = {"list_id": list_id, "limit": limit}
         if cursor:
-            params["cursor"] = cursor
-        
-        return await self._make_request("GET", "slackLists.items.list", params=params)
+            payload["cursor"] = cursor
+
+        return await self._make_request("POST", "slackLists.items.list", json=payload)
     
     async def get_all_list_items(self, list_id: str) -> List[Dict[str, Any]]:
         """Get all items from a Slack List (handles pagination)"""
@@ -183,6 +191,27 @@ def create_checkbox_field(column_id: str, checked: bool) -> Dict[str, Any]:
     return {
         "column_id": column_id,
         "checkbox": checked
+    }
+
+def create_number_field(column_id: str, number: Union[int, float]) -> Dict[str, Any]:
+    """Helper to create a number field"""
+    return {
+        "column_id": column_id,
+        "number": [number]
+    }
+
+def create_email_field(column_id: str, email: str) -> Dict[str, Any]:
+    """Helper to create an email field"""
+    return {
+        "column_id": column_id,
+        "email": [email]
+    }
+
+def create_phone_field(column_id: str, phone: str) -> Dict[str, Any]:
+    """Helper to create a phone field"""
+    return {
+        "column_id": column_id,
+        "phone": [phone]
     }
 
 def extract_field_value(item: Dict[str, Any], column_id: str) -> Any:
@@ -270,6 +299,12 @@ async def create_list_item(
                         fields.append(create_select_field(column_id, option_ids))
                     elif field_type == "checkbox":
                         fields.append(create_checkbox_field(column_id, bool(value)))
+                    elif field_type == "number":
+                        fields.append(create_number_field(column_id, value))
+                    elif field_type == "email":
+                        fields.append(create_email_field(column_id, value))
+                    elif field_type == "phone":
+                        fields.append(create_phone_field(column_id, value))
                     else:
                         logger.warning(f"Unsupported field type: {field_type}")
                         
@@ -347,7 +382,7 @@ async def create_multiple_list_items(
                     column_id = field_def["column_id"]
                     field_type = field_def["type"]
                     value = field_def["value"]
-                    
+
                     if field_type == "text":
                         fields.append(create_text_field(column_id, value))
                     elif field_type == "date":
@@ -360,6 +395,12 @@ async def create_multiple_list_items(
                         fields.append(create_select_field(column_id, option_ids))
                     elif field_type == "checkbox":
                         fields.append(create_checkbox_field(column_id, bool(value)))
+                    elif field_type == "number":
+                        fields.append(create_number_field(column_id, value))
+                    elif field_type == "email":
+                        fields.append(create_email_field(column_id, value))
+                    elif field_type == "phone":
+                        fields.append(create_phone_field(column_id, value))
                 
                 # Create the item
                 result = await client.create_list_item(list_id, fields)
@@ -726,16 +767,20 @@ async def export_list_items(
         return f"❌ Unexpected error: {str(e)}"
 
 # Server startup and configuration
-if __name__ == "__main__":
+def main():
+    """Main entry point for the MCP server"""
     # Validate environment
     token = os.getenv("SLACK_BOT_TOKEN")
     if not token:
         logger.error("SLACK_BOT_TOKEN environment variable is required")
         exit(1)
-    
+
     logger.info("Starting Slack Lists MCP Server...")
     logger.info("Available tools: create_list_item, create_multiple_list_items, get_list_items, filter_list_items, export_list_items")
-    
+
     # Run the MCP server
     mcp.run(transport="stdio")
+
+if __name__ == "__main__":
+    main()
 

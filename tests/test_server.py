@@ -17,13 +17,16 @@ import asyncio
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from slack_lists_server import (
-    SlackListsClient, 
+    SlackListsClient,
     SlackListsError,
     create_text_field,
     create_date_field,
     create_user_field,
     create_select_field,
     create_checkbox_field,
+    create_number_field,
+    create_email_field,
+    create_phone_field,
     extract_field_value
 )
 
@@ -54,6 +57,21 @@ class TestFieldHelpers:
         field = create_checkbox_field("Col123", True)
         assert field["column_id"] == "Col123"
         assert field["checkbox"] is True
+
+    def test_create_number_field(self):
+        field = create_number_field("Col123", 42.5)
+        assert field["column_id"] == "Col123"
+        assert field["number"] == [42.5]
+
+    def test_create_email_field(self):
+        field = create_email_field("Col123", "test@example.com")
+        assert field["column_id"] == "Col123"
+        assert field["email"] == ["test@example.com"]
+
+    def test_create_phone_field(self):
+        field = create_phone_field("Col123", "+1234567890")
+        assert field["column_id"] == "Col123"
+        assert field["phone"] == ["+1234567890"]
 
 class TestFieldExtraction:
     """Test field value extraction from items"""
@@ -128,18 +146,43 @@ class TestSlackListsClient:
     @pytest.mark.asyncio
     async def test_make_request_slack_error(self):
         client = SlackListsClient("test-token")
-        
+
         mock_response = Mock()
         mock_response.json.return_value = {"ok": False, "error": "invalid_auth"}
         mock_response.raise_for_status.return_value = None
-        
+
         with patch('httpx.AsyncClient') as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-            
+
             with pytest.raises(SlackListsError) as exc_info:
                 await client._make_request("GET", "test.endpoint")
-            
+
             assert "invalid_auth" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_make_request_with_metadata_messages(self):
+        """Test that response_metadata.messages are included in error"""
+        client = SlackListsClient("test-token")
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "ok": False,
+            "error": "invalid_arguments",
+            "response_metadata": {
+                "messages": ["[ERROR] missing required field: list_id"]
+            }
+        }
+        mock_response.raise_for_status.return_value = None
+
+        with patch('httpx.AsyncClient') as mock_client:
+            mock_client.return_value.__aenter__.return_value.request = AsyncMock(return_value=mock_response)
+
+            with pytest.raises(SlackListsError) as exc_info:
+                await client._make_request("POST", "test.endpoint", json={"test": "data"})
+
+            error_message = str(exc_info.value)
+            assert "invalid_arguments" in error_message
+            assert "missing required field: list_id" in error_message
 
 class TestEnvironmentValidation:
     """Test environment variable validation"""
