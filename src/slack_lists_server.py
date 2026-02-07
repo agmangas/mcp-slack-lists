@@ -141,7 +141,7 @@ class SlackListsClient:
         self, list_id: str, item_id: str, fields: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Update an existing item in a Slack List"""
-        payload = {"list_id": list_id, "item_id": item_id, "fields": fields}
+        payload = {"list_id": list_id, "item_id": item_id, "cells": fields}
 
         return await self._make_request("POST", "slackLists.items.update", json=payload)
 
