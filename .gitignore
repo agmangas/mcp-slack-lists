@@ -133,3 +133,4 @@ server_config.json
 *.bak
 *.backup
 
+.claude_consciousness.m8
